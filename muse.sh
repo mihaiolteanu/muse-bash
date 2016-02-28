@@ -6,7 +6,8 @@ check_dept () {
 }
 
 # check for dependencies
-for dept in jq youtube-dl; do
+# avconv is part of libav-tools, so you need to install that first
+for dept in jq youtube-dl avconv; do
     check_dept $dept
 done
 
@@ -22,8 +23,10 @@ lastfm_toptracks_req=$lastfm_base_req"&method=artist.getTopTracks&limit=${LASTFM
 youtube="https://www.youtube.com/"
 youtube_search=$youtube"results?search_query="
 
-echo_underline () { echo -ne "\e[4m$@\e[0m"; }
-echo_bold () { echo -ne "\e[1m$@\e[0m"; }
+bold=$(tput bold)
+normal=$(tput sgr0)
+underline=$(tput smul)
+
 tags_info () { echo "Feature not implemented yet."; }
 
 artist_toptracks_get () {
@@ -51,18 +54,21 @@ artist_info_display () {
     # display the common artist info. this info doesn't change when the
     # selection menu changes
     clear
-    echo_bold $artist_raw": "
-    echo ${summary%%<a href*}; echo # remove link at the end of summary
-    echo_bold "Tags: "
-    for entry in "${tags[@]}"; do
-        echo -n "$entry, "
-    done
+    echo "${underline}${bold}"$artist_raw"${normal}"
+    # remove link at the end of summary
+    echo ${summary%%<a href*} | fold --spaces ; echo
+
+    # [*] prints all entries in the array, separated by the IFS
+    # If I would want to iterate over all the entries with a for, I would use [@] instead
+    # I can also add a space to that, for prettiness
+    oldIFS=$IFS; IFS=$','
+    echo "${underline}${bold}Tags${normal}"
+    echo "${tags[*]}" | sed 's/,/, /g' | fold --spaces
     echo
-    echo_bold "Similar artists: "
-    for entry in "${similar[@]}"; do
-        echo -n "$entry, "
-    done
-    echo; echo
+    echo "${underline}${bold}Similar artists${normal}"
+    echo "${similar[*]}" | sed 's/,/, /g' | fold --spaces
+    IFS=$oldIFS
+    echo
 
     # decide what to display next. I want to clear the old selection menu
     # and display a new one, based on the old selection, keeping the artist info
@@ -107,7 +113,7 @@ artist_info_display () {
                 esac
             done ;;
         "Top Tracks")
-            echo_bold "Top Tracks: "; echo
+            echo "${bold}Top Tracks${normal} "
             PS3="Listen to: "
             select choice in "${toptracks[@]}" "Listen To All" "Go Back" "Quit"; do
                 case $choice in
@@ -118,7 +124,7 @@ artist_info_display () {
                         # listen to all tracks displayed, as mp3
                         mkdir $MUSE_DWN_PATH/$artist
                         cd $MUSE_DWN_PATH/$artist
-                        for track in $toptracks; do
+                        for track in "${toptracks[@]}"; do
                             track=$(echo $track | tr ' ' '+')
                             youtube-dl --extract-audio --audio-format mp3 $youtube$(curl -s $youtube_search${artist}+${track} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//')
                         done
