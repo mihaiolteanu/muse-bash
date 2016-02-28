@@ -24,7 +24,7 @@ youtube_search=$youtube"results?search_query="
 
 echo_underline () { echo -ne "\e[4m$@\e[0m"; }
 echo_bold () { echo -ne "\e[1m$@\e[0m"; }
-tags_info () { echo "Not implemented yet. Exiting.."; exit 0; }
+tags_info () { echo "Feature not implemented yet."; }
 
 artist_toptracks_get () {
     lastfm_resp=$(curl --silent $lastfm_toptracks_req${artist})
@@ -86,38 +86,49 @@ artist_info_display () {
         "Similar artists")
             PS3="Pick an artist: "
             select choice in "${similar[@]}" "Go Back" "Quit"; do
-                [[ $choice = "Quit" ]] && exit 0
-                [[ $choice = "Go Back" ]] &&  artist_info_display "Explore"
-                artist_info_get "$choice"
-                artist_info_display "Explore"
+                case $choice in
+                    "Quit") exit 0;;
+                    "Go Back")
+                        artist_info_display "Explore" ;;
+                    *)
+                        artist_info_get "$choice"
+                        artist_info_display "Explore" ;;
+                esac
             done ;;
         "Tags")
             PS3="Pick a tag: "
             select choice in "${tags[@]}" "Go Back" "Quit"; do
-                [[ $choice = "Quit" ]] && exit 0
-                [[ $choice = "Go Back" ]] &&  artist_info_display "Explore"
-                tags_info "$choice"
+                case $choice in
+                    "Quit") exit 0;;
+                    "Go Back")
+                        artist_info_display "Explore" ;;
+                    *)
+                        tags_info "$choice" ;;
+                esac
             done ;;
         "Top Tracks")
             echo_bold "Top Tracks: "; echo
             PS3="Listen to: "
             select choice in "${toptracks[@]}" "Listen To All" "Go Back" "Quit"; do
-                [[ $choice = "Quit" ]] && exit 0
-                [[ $choice = "Go Back" ]] &&  artist_info_display "Explore"
-                if [[ $choice = "Listen To All" ]]; then
-                    # listen to all tracks displayed, as mp3
-                    mkdir $MUSE_DWN_PATH/$artist
-                    cd $MUSE_DWN_PATH/$artist
-                    for track in $toptracks; do
-                        track=$(echo $track | tr ' ' '+')
-                        youtube-dl --extract-audio --audio-format mp3 $youtube$(curl -s $youtube_search${artist}+${track} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//')
-                    done
-                    cmus-remote -q *.mp3
-                else
-                    # watch the video
-                    song=$(echo $choice | tr ' ' '+')
-                    youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${artist}+${song} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc >/dev/null 2>&1 - &
-                fi
+                case $choice in
+                    "Quit") exit 0;;
+                    "Go Back")
+                        artist_info_display "Explore" ;;
+                    "Listen To All")
+                        # listen to all tracks displayed, as mp3
+                        mkdir $MUSE_DWN_PATH/$artist
+                        cd $MUSE_DWN_PATH/$artist
+                        for track in $toptracks; do
+                            track=$(echo $track | tr ' ' '+')
+                            youtube-dl --extract-audio --audio-format mp3 $youtube$(curl -s $youtube_search${artist}+${track} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//')
+                        done
+                        cmus-remote -q *.mp3 ;;
+                    *)
+                        # watch the video
+                        song=$(echo $choice | tr ' ' '+')
+                        youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${artist}+${song} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc >/dev/null 2>&1 - &
+                        ;;
+                esac
             done
     esac
 }
