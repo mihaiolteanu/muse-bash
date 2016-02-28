@@ -92,13 +92,25 @@ artist_info_display () {
             echo_bold "Top Tracks: "; echo
             PS3="Listen to: "
             oldIFS=$IFS; IFS=$','
-            select choice in $toptracks "Go Back" "Quit"; do
+            select choice in $toptracks "Listen To All" "Go Back" "Quit"; do
                 [[ $choice = "Quit" ]] && exit 0
-                IFS=$oldIFS
-                [[ $choice = "Go Back" ]] &&  artist_info_display "Explore"
-                song=$(echo $choice | tr ' ' '+')
-                echo $youtube_search${artist}+${song}
-                youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${artist}+${song} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc >/dev/null 2>&1 - &
+                if [[ $choice = "Listen To All" ]]; then
+                    # listen to all tracks displayed, as mp3
+                    mkdir $MUSE_DWN_PATH/$artist
+                    cd $MUSE_DWN_PATH/$artist
+                    for track in $toptracks; do
+                        track=$(echo $track | tr ' ' '+')
+                        youtube-dl --extract-audio --audio-format mp3 $youtube$(curl -s $youtube_search${artist}+${track} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//')
+                    done
+                    cmus-remote -q *.mp3
+                elif [[ $choice = "Go Back" ]]; then
+                    IFS=$oldIFS
+                    artist_info_display "Explore"
+                else
+                    # watch the video
+                    song=$(echo $choice | tr ' ' '+')
+                    youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${artist}+${song} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc >/dev/null 2>&1 - &
+                fi
             done
     esac
 }
