@@ -28,17 +28,23 @@ tags_info () { echo "Not implemented yet. Exiting.."; exit 0; }
 
 artist_toptracks_get () {
     lastfm_resp=$(curl --silent $lastfm_toptracks_req${artist})
-    toptracks=$(echo $lastfm_resp | jq -r '.toptracks.track | .[] | .name' | tr '\n' ',')
+    # save toptracks as an array
+    oldIFS=$IFS; IFS=$'\n'
+    toptracks=($(echo $lastfm_resp | jq -r '.toptracks.track | .[] | .name'))
+    IFS=$oldIFS
 }
 
 # get all the info from last.fm for the artist given as $1 parameter
 artist_info_get () {
     artist_raw=$1                                            # artist name, as given by the user
     artist=$(echo $artist_raw | tr ' ' '+')                  # artist name, suitable for last.fm query
-    lastfm_resp=$(curl --silent $lastfm_artist_req${artist})  # get json response from last.fm
-    similar=$(echo $lastfm_resp | jq -r '.artist.similar.artist | .[] | .name' | tr '\n' ',')
-    summary=$(echo $lastfm_resp | jq -r '.artist.bio.summary'; echo)
-    tags=$(echo $lastfm_resp | jq -r '.artist.tags.tag | .[] | .name' | tr '\n' ',')
+    lastfm_resp=$(curl --silent $lastfm_artist_req${artist}) # get json response from last.fm
+    summary=$(echo $lastfm_resp | jq -r '.artist.bio.summary')
+    # build arrays for both similar artists and for tags entries
+    oldIFS=$IFS; IFS=$'\n'
+    similar=($(echo $lastfm_resp | jq -r '.artist.similar.artist | .[] | .name'))
+    tags=($(echo $lastfm_resp | jq -r '.artist.tags.tag | .[] | .name'))
+    IFS=$oldIFS
 }
 
 artist_info_display () {
@@ -47,8 +53,16 @@ artist_info_display () {
     clear
     echo_bold $artist_raw": "
     echo ${summary%%<a href*}; echo # remove link at the end of summary
-    echo_bold "Tags: "; echo $tags; echo
-    echo_bold "Similar artists: "; echo $similar; echo
+    echo_bold "Tags: "
+    for entry in "${tags[@]}"; do
+        echo -n "$entry, "
+    done
+    echo
+    echo_bold "Similar artists: "
+    for entry in "${similar[@]}"; do
+        echo -n "$entry, "
+    done
+    echo; echo
 
     # decide what to display next. I want to clear the old selection menu
     # and display a new one, based on the old selection, keeping the artist info
@@ -71,29 +85,25 @@ artist_info_display () {
             done ;;
         "Similar artists")
             PS3="Pick an artist: "
-            oldIFS=$IFS; IFS=$','
-            select choice in $similar "Go Back" "Quit"; do
+            select choice in "${similar[@]}" "Go Back" "Quit"; do
                 [[ $choice = "Quit" ]] && exit 0
-                IFS=$oldIFS
                 [[ $choice = "Go Back" ]] &&  artist_info_display "Explore"
                 artist_info_get "$choice"
                 artist_info_display "Explore"
             done ;;
         "Tags")
             PS3="Pick a tag: "
-            oldIFS=$IFS; IFS=$','
-            select choice in $tags "Go Back" "Quit"; do
+            select choice in "${tags[@]}" "Go Back" "Quit"; do
                 [[ $choice = "Quit" ]] && exit 0
-                IFS=$oldIFS
                 [[ $choice = "Go Back" ]] &&  artist_info_display "Explore"
                 tags_info "$choice"
             done ;;
         "Top Tracks")
             echo_bold "Top Tracks: "; echo
             PS3="Listen to: "
-            oldIFS=$IFS; IFS=$','
-            select choice in $toptracks "Listen To All" "Go Back" "Quit"; do
+            select choice in "${toptracks[@]}" "Listen To All" "Go Back" "Quit"; do
                 [[ $choice = "Quit" ]] && exit 0
+                [[ $choice = "Go Back" ]] &&  artist_info_display "Explore"
                 if [[ $choice = "Listen To All" ]]; then
                     # listen to all tracks displayed, as mp3
                     mkdir $MUSE_DWN_PATH/$artist
@@ -103,9 +113,6 @@ artist_info_display () {
                         youtube-dl --extract-audio --audio-format mp3 $youtube$(curl -s $youtube_search${artist}+${track} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//')
                     done
                     cmus-remote -q *.mp3
-                elif [[ $choice = "Go Back" ]]; then
-                    IFS=$oldIFS
-                    artist_info_display "Explore"
                 else
                     # watch the video
                     song=$(echo $choice | tr ' ' '+')
