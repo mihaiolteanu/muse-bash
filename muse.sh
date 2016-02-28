@@ -23,7 +23,6 @@ echo_bold () { echo -ne "\e[1m$@\e[0m"; }
 tags_info () { echo "Not implemented yet. Exiting.."; exit 0; }
 
 artist_top_tracks () {
-    declare artist=`echo $1 | tr ' ' '+'`
     declare lastfm_resp=`curl --silent $lastfm_toptracks_req${artist}`
     declare toptracks=`echo $lastfm_resp | jq -r '.toptracks.track | .[] | .name' | tr '\n' ','`
 
@@ -38,47 +37,56 @@ artist_top_tracks () {
     done
 }
 
-artist_info () {
-    # replace "lacuna coil" with "lacuna+coil", for example
-    declare artist=`echo $1 | tr ' ' '+'`
-    # get json response from last.fm
-    declare lastfm_resp=`curl --silent $lastfm_artist_req${artist}`
-    # filter the json response with jq
-    declare similar=`echo $lastfm_resp | jq -r '.artist.similar.artist | .[] | .name' | tr '\n' ','`
-    declare summary=`echo $lastfm_resp | jq -r '.artist.bio.summary'; echo`
-    declare tags=`echo $lastfm_resp | jq -r '.artist.tags.tag | .[] | .name' | tr '\n' ','`
+# get all the info from last.fm for the artist given as $1 parameter
+artist_info_get () {
+    artist_raw=$1                                            # artist name, as given by the user
+    artist=`echo $artist_raw | tr ' ' '+'`                   # artist name, suitable for last.fm query
+    lastfm_resp=`curl --silent $lastfm_artist_req${artist}`  # get json response from last.fm
+    similar=`echo $lastfm_resp | jq -r '.artist.similar.artist | .[] | .name' | tr '\n' ','`
+    summary=`echo $lastfm_resp | jq -r '.artist.bio.summary'; echo`
+    tags=`echo $lastfm_resp | jq -r '.artist.tags.tag | .[] | .name' | tr '\n' ','`
+}
 
-    # display the filtered response
+artist_info_display () {
+    # display the common artist info. this info doesn't change when the
+    # selection menu changes
     clear
-    echo_bold $1": "; echo $summary; echo
+    echo_bold $artist_raw": "; echo $summary; echo
     echo_bold "Tags: "; echo $tags; echo
     echo_bold "Similar artists: "; echo $similar; echo
 
-    # select the next step to go from here
-    PS3="Explore: "
-    select entry in "Similar artists" "Tags" "Top Tracks" "Albums" "Quit"; do
-        [[ $entry = "Quit" ]] && exit 0
-        oldIFS=$IFS; IFS=$','
-        if [[ $entry = "Similar artists" ]]; then
-            select entry in $similar "Quit"; do
-                [[ $entry = "Quit" ]] && exit 0
+    # decide what to display next. I want to clear the old selection menu
+    # and display a new one, based on the old selection, keeping the artist info
+    # stuff that is already displayed in the console intact
+    case $1 in
+        "Explore")
+            PS3="Explore: "
+            select choice in "Similar artists" "Tags" "Top Tracks" "Albums" "Quit"; do
+                case $choice in
+                    "Quit") exit 0;;
+                    "Similar artists")
+                        artist_info_display "Similar artists" ;;
+                    "Tags")
+                        select choice in $tags "Quit"; do
+                            [[ $choice = "Quit" ]] && exit 0
+                            tags_info "$choice"
+                        done ;;
+                    "Top Tracks")
+                        artist_top_tracks "$artist_raw" ;;
+                esac
+                exit 0
+            done ;;
+        "Similar artists")
+            PS3="Pick an artist: "
+            oldIFS=$IFS; IFS=$','
+            select choice in $similar "Quit"; do
+                [[ $choice = "Quit" ]] && exit 0
                 IFS=$oldIFS
-                artist_info "$entry"
-            done
-        fi
-        if [[ $entry = "Tags" ]]; then
-            select entry in $tags "Quit"; do
-                [[ $entry = "Quit" ]] && exit 0
-                IFS=$oldIFS
-                tags_info "$entry"
-            done
-        fi
-        if [[ $entry = "Top Tracks" ]]; then
-            IFS=$oldIFS
-            artist_top_tracks "$1"
-        fi
-        exit 0
-    done
+                artist_info_get "$choice"
+                artist_info_display "Explore"
+            done ;;
+    esac
 }
 
-artist_info "lacuna coil"
+artist_info_get "lacuna coil"
+artist_info_display "Explore"
