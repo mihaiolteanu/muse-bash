@@ -31,13 +31,18 @@ tags_info () { echo "Feature not implemented yet."; }
 
 artist_toptracks_get () {
     lastfm_resp=$(curl --silent $lastfm_toptracks_req${artist})
-    # save toptracks as an array
+    # create an array, where each element is separated by the IFS; jq returns each
+    # entry (toptrack in this case) on a new line. I can then walk the array with
+    # the <for entry in "${similar[@]}"> construct or a similar select construct.
+    # Plus, I can print all the elements, separated by IFS with the <echo "${tags[*]}"> construct
     oldIFS=$IFS; IFS=$'\n'
     toptracks=($(echo $lastfm_resp | jq -r '.toptracks.track | .[] | .name'))
     IFS=$oldIFS
 }
 
 # get all the info from last.fm for the artist given as $1 parameter
+# as this is the first function to be called for a new artist, this is the place
+# where both $artist and $artist_raw should be set
 artist_info_get () {
     artist_raw=$1                                            # artist name, as given by the user
     artist=$(echo $artist_raw | tr ' ' '+')                  # artist name, suitable for last.fm query
@@ -47,6 +52,28 @@ artist_info_get () {
     oldIFS=$IFS; IFS=$'\n'
     similar=($(echo $lastfm_resp | jq -r '.artist.similar.artist | .[] | .name'))
     tags=($(echo $lastfm_resp | jq -r '.artist.tags.tag | .[] | .name'))
+    IFS=$oldIFS
+}
+
+# get all the albums of the artist that is in effect
+artist_albums_get () {
+    req=$lastfm_base_req"&method=artist.getTopAlbums&artist="$artist"&limit="$LASTFM_ALBUMS_NO
+    resp=$(curl --silent $req)
+    oldIFS=$IFS; IFS=$'\n'
+    albums=($(echo $resp | jq -r '.topalbums.album | .[] | .name'))
+    IFS=$oldIFS
+}
+
+# get additional info for the album given as $1 for the artist that is in effect
+artist_album_info () {
+    album_raw=$1
+    album=$(echo $album_raw | tr ' ' '+')                  # album name, suitable for last.fm query
+    req=$lastfm_base_req"&method=album.getInfo&artist="$artist"&album="$album
+    resp=$(curl --silent $req)
+    album_published=$(echo $resp | jq -r '.album.wiki.published')
+    album_summary=$(echo $resp | jq -r '.album.wiki.summary')
+    oldIFS=$IFS; IFS=$'\n'
+    album_tracks=($(echo $resp | jq -r '.album.tracks.track | .[] | .name'))
     IFS=$oldIFS
 }
 
@@ -86,6 +113,9 @@ artist_info_display () {
                     "Top Tracks")
                         artist_toptracks_get "$artist_raw"
                         artist_info_display "Top Tracks" ;;
+                    "Albums")
+                        artist_albums_get
+                        artist_info_display "Albums" ;;
                 esac
                 exit 0
             done ;;
@@ -135,7 +165,35 @@ artist_info_display () {
                         youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${artist}+${song} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc >/dev/null 2>&1 - &
                         ;;
                 esac
-            done
+            done ;;
+        "Albums")
+            echo "${bold}Albums${normal}"
+            PS3="Explore album: "
+            select choice in "${albums[@]}" "Go Back" "Quit"; do
+                case $choice in
+                    "Quit") exit 0;;
+                    "Go Back")
+                        artist_info_display "Explore" ;;
+                    *)
+                        artist_album_info $choice
+                        artist_info_display "Album Info"
+                esac
+            done ;;
+        "Album Info")
+            echo "${bold}Album${normal} "$choice
+            echo "${bold}Published${normal} "$album_published
+            echo $album_summary
+            echo "${bold}Playlist${normal}"
+            PS3="Listen to: "
+            select choice in "${album_tracks[@]}" "Go Back" "Quit"; do
+                case $choice in
+                    "Quit") exit 0;;
+                    "Go Back")
+                        artist_info_display "Albums" ;;
+                    *)
+                        echo $choice
+                esac
+            done ;;
     esac
 }
 
