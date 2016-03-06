@@ -77,7 +77,7 @@ artist_album_info () {
     IFS=$oldIFS
 }
 
-artist_info_display () {
+header_display () {
     # display the common artist info. this info doesn't change when the
     # selection menu changes
     clear
@@ -96,105 +96,129 @@ artist_info_display () {
     echo "${similar[*]}" | sed 's/,/, /g' | fold --spaces
     IFS=$oldIFS
     echo
+}
 
+artist_info_display () {
+    next=$1
     # decide what to display next. I want to clear the old selection menu
     # and display a new one, based on the old selection, keeping the artist info
     # stuff that is already displayed in the console intact
-    case $1 in
-        "Explore")
-            PS3="Explore: "
-            select choice in "Similar artists" "Tags" "Top Tracks" "Albums" "Quit"; do
-                case $choice in
-                    "Quit") exit 0;;
-                    "Similar artists")
-                        artist_info_display "Similar artists" ;;
-                    "Tags")
-                        artist_info_display "Tags" ;;
-                    "Top Tracks")
-                        artist_toptracks_get "$artist_raw"
-                        artist_info_display "Top Tracks" ;;
-                    "Albums")
-                        artist_albums_get
-                        artist_info_display "Albums" ;;
-                esac
-                exit 0
-            done ;;
-        "Similar artists")
-            PS3="Pick an artist: "
-            select choice in "${similar[@]}" "Go Back" "Quit"; do
-                case $choice in
-                    "Quit") exit 0;;
-                    "Go Back")
-                        artist_info_display "Explore" ;;
-                    *)
-                        artist_info_get "$choice"
-                        artist_info_display "Explore" ;;
-                esac
-            done ;;
-        "Tags")
-            PS3="Pick a tag: "
-            select choice in "${tags[@]}" "Go Back" "Quit"; do
-                case $choice in
-                    "Quit") exit 0;;
-                    "Go Back")
-                        artist_info_display "Explore" ;;
-                    *)
-                        tags_info "$choice" ;;
-                esac
-            done ;;
-        "Top Tracks")
-            echo "${bold}Top Tracks${normal} "
-            PS3="Listen to: "
-            select choice in "${toptracks[@]}" "Listen To All" "Go Back" "Quit"; do
-                case $choice in
-                    "Quit") exit 0;;
-                    "Go Back")
-                        artist_info_display "Explore" ;;
-                    "Listen To All")
-                        # listen to all tracks displayed, as mp3
-                        mkdir $MUSE_DWN_PATH/$artist
-                        cd $MUSE_DWN_PATH/$artist
-                        for track in "${toptracks[@]}"; do
-                            track=$(echo $track | tr ' ' '+')
-                            youtube-dl --extract-audio --audio-format mp3 $youtube$(curl -s $youtube_search${artist}+${track} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//')
-                        done
-                        cmus-remote -q *.mp3 ;;
-                    *)
-                        # watch the video
-                        song=$(echo $choice | tr ' ' '+')
-                        youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${artist}+${song} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc >/dev/null 2>&1 - &
-                        ;;
-                esac
-            done ;;
-        "Albums")
-            echo "${bold}Albums${normal}"
-            PS3="Explore album: "
-            select choice in "${albums[@]}" "Go Back" "Quit"; do
-                case $choice in
-                    "Quit") exit 0;;
-                    "Go Back")
-                        artist_info_display "Explore" ;;
-                    *)
-                        artist_album_info $choice
-                        artist_info_display "Album Info"
-                esac
-            done ;;
-        "Album Info")
-            echo "${bold}Album${normal} "$choice
-            echo "${bold}Published${normal} "$album_published
-            echo $album_summary
-            echo "${bold}Playlist${normal}"
-            PS3="Listen to: "
-            select choice in "${album_tracks[@]}" "Go Back" "Quit"; do
-                case $choice in
-                    "Quit") exit 0;;
-                    "Go Back")
-                        artist_info_display "Albums" ;;
-                    *)
-                        echo $choice
-                esac
-            done ;;
-    esac
+    while [[ $next != "Quit" ]]; do
+        header_display
+        case $next in
+            "Explore")
+                PS3="Explore: "
+                select choice in "Similar artists" "Tags" "Top Tracks" "Albums" "Quit"; do
+                    case $choice in
+                        "Quit")
+                            next="Quit"
+                            break ;;
+                        "Similar artists")
+                            next="Similar artists"
+                            break ;;
+                        "Tags")
+                            next="Tags"
+                            break ;;
+                        "Top Tracks")
+                            artist_toptracks_get "$artist_raw"
+                            next="Top Tracks"
+                            break ;;
+                        "Albums")
+                            artist_albums_get
+                            next="Albums"
+                            break ;;
+                    esac
+                done ;;
+            "Similar artists")
+                PS3="Pick an artist: "
+                select choice in "${similar[@]}" "Go Back" "Quit"; do
+                    case $choice in
+                        "Quit")
+                            next="Quit"
+                            break ;;
+                        "Go Back")
+                            next="Explore"
+                            break ;;
+                        *)
+                            artist_info_get "$choice"
+                            next="Explore"
+                            break ;;
+                    esac
+                done ;;
+            "Tags")
+                PS3="Pick a tag: "
+                select choice in "${tags[@]}" "Go Back" "Quit"; do
+                    case $choice in
+                        "Quit")
+                            next="Quit"
+                            break ;;
+                        "Go Back")
+                            next="Explore"
+                            break ;;
+                        *)
+                            tags_info "$choice" ;;
+                    esac
+                done ;;
+            "Top Tracks")
+                echo "${bold}Top Tracks${normal} "
+                PS3="Listen to: "
+                select choice in "${toptracks[@]}" "Listen To All" "Go Back" "Quit"; do
+                    case $choice in
+                        "Quit")
+                            next="Quit"
+                            break ;;
+                        "Go Back")
+                            next="Explore"
+                            break ;;
+                        "Listen To All")
+                            # listen to all tracks displayed, as mp3
+                            mkdir $MUSE_DWN_PATH/$artist
+                            cd $MUSE_DWN_PATH/$artist
+                            for track in "${toptracks[@]}"; do
+                                track=$(echo $track | tr ' ' '+')
+                                youtube-dl --extract-audio --audio-format mp3 $youtube$(curl -s $youtube_search${artist}+${track} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//')
+                            done
+                            cmus-remote -q *.mp3 ;;
+                        *)
+                            # watch the video
+                            song=$(echo $choice | tr ' ' '+')
+                            youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${artist}+${song} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc >/dev/null 2>&1 - &
+                            ;;
+                    esac
+                done ;;
+            "Albums")
+                echo "${bold}Albums${normal}"
+                PS3="Explore album: "
+                select choice in "${albums[@]}" "Go Back" "Quit"; do
+                    case $choice in
+                        "Quit") exit 0;;
+                        "Go Back")
+                            artist_info_display "Explore" ;;
+                        *)
+                            artist_album_info $choice
+                            artist_info_display "Album Info"
+                    esac
+                done ;;
+            "Album Info")
+                echo "${bold}Album${normal} "$choice
+                echo "${bold}Published${normal} "$album_published
+                echo $album_summary
+                echo "${bold}Playlist${normal}"
+                PS3="Listen to: "
+                select choice in "${album_tracks[@]}" "Go Back" "Quit"; do
+                    case $choice in
+                        "Quit")
+                            next="Quit"
+                            break ;;
+                        "Go Back")
+                            next="Albums"
+                            break ;;
+                        *)
+                            echo $choice
+                    esac
+                done ;;
+        esac
+    done
 }
 
 artist_info_get "$1"
