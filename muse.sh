@@ -97,7 +97,7 @@ header_display () {
     clear
     echo "${underline}${bold}"$artist_raw"${normal}"
     # remove link at the end of summary
-    echo ${summary%%<a href*} | fold --spaces ; echo
+    echo "${summary%%<a href*}" | fold --spaces ; echo
 
     # [*] prints all entries in the array, separated by the IFS
     # If I would want to iterate over all the entries with a for, I would use [@] instead
