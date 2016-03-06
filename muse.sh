@@ -123,10 +123,16 @@ main () {
         case $next in
             "Explore")
                 PS3="Explore: "
-                select choice in "( Quit )" "Similar artists" "Tags" "Top Tracks" "Albums"; do
+                select choice in "( Quit )" "( Search Other Artist )" "Similar artists" "Tags" "Top Tracks" "Albums"; do
                     case $choice in
                         "( Quit )")
                             next="Quit"
+                            break ;;
+                        "( Search Other Artist )")
+                            echo -n "Artist: "
+                            read artist
+                            artist_info_get "$artist"
+                            next="Explore"
                             break ;;
                         "Similar artists")
                             next="Similar artists"
