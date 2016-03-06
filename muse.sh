@@ -77,6 +77,10 @@ artist_album_info () {
     IFS=$oldIFS
 }
 
+video_watch () {
+    youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${1}+${2} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc --play-and-exit &>/dev/null - &
+}
+
 header_display () {
     # display the common artist info. this info doesn't change when the
     # selection menu changes
@@ -172,18 +176,14 @@ artist_info_display () {
                             next="Explore"
                             break ;;
                         "Listen To All")
-                            # listen to all tracks displayed, as mp3
-                            mkdir $MUSE_DWN_PATH/$artist
-                            cd $MUSE_DWN_PATH/$artist
                             for track in "${toptracks[@]}"; do
                                 track=$(echo $track | tr ' ' '+')
-                                youtube-dl --extract-audio --audio-format mp3 $youtube$(curl -s $youtube_search${artist}+${track} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//')
-                            done
-                            cmus-remote -q *.mp3 ;;
+                                video_watch $artist $track
+                                wait
+                            done ;;
                         *)
-                            # watch the video
                             song=$(echo $choice | tr ' ' '+')
-                            youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${artist}+${song} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc >/dev/null 2>&1 - &
+                            video_watch $artist $song
                             ;;
                     esac
                 done ;;
