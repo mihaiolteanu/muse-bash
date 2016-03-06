@@ -208,7 +208,7 @@ artist_info_display () {
                 echo $album_summary
                 echo "${bold}Playlist${normal}"
                 PS3="Listen to: "
-                select choice in "( Quit )" "( Go Back )" "${album_tracks[@]}"; do
+                select choice in "( Quit )" "( Go Back )" "${album_tracks[@]}" "Listen To All"; do
                     case $choice in
                         "( Quit )")
                             next="Quit"
@@ -216,8 +216,15 @@ artist_info_display () {
                         "( Go Back )")
                             next="Albums"
                             break ;;
+                        "Listen To All")
+                            for track in "${album_tracks[@]}"; do
+                                video_watch $artist ${track// /+}
+                                wait
+                            done ;;
                         *)
-                            echo $choice
+                            video_watch $artist ${choice// /+}
+                            ;;
+
                     esac
                 done ;;
         esac
