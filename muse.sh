@@ -215,15 +215,15 @@ main () {
                             next="Explore"
                             break ;;
                         *)
-                            artist_albuminfo_get $choice
+                            artist_albuminfo_get "$choice"
                             next="Album Info"
                             break ;;
                     esac
                 done ;;
             "Album Info")
                 echo "${bold}Album${normal} "$choice
-                echo "${bold}Published${normal} "$album_published
-                echo $album_summary
+                [[ "$album_published" = "null" ]] || echo "${bold}Published${normal} "$album_published
+                [[ "$album_summary" = "null" ]] || echo "${album_summary%%<a href*}" | fold --spaces ; echo
                 echo "${bold}Playlist${normal}"
                 PS3="Listen to: "
                 select choice in "( Quit )" "( Go Back )" "( Watch All )" "${album_tracks[@]}"; do
