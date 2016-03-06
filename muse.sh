@@ -6,8 +6,7 @@ check_dept () {
 }
 
 # check for dependencies
-# avconv is part of libav-tools, so you need to install that first
-for dept in jq youtube-dl avconv; do
+for dept in jq youtube-dl; do
     check_dept $dept
 done
 
