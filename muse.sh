@@ -44,7 +44,7 @@ artist_toptracks_get () {
 # where both $artist and $artist_raw should be set
 artist_info_get () {
     artist_raw=$1                                            # artist name, as given by the user
-    artist=$(echo $artist_raw | tr ' ' '+')                  # artist name, suitable for last.fm query
+    artist=${artist_raw// /+}                                # artist name, suitable for last.fm query
     lastfm_resp=$(curl --silent $lastfm_artist_req${artist}) # get json response from last.fm
     summary=$(echo $lastfm_resp | jq -r '.artist.bio.summary')
     # build arrays for both similar artists and for tags entries
@@ -66,7 +66,7 @@ artist_albums_get () {
 # get additional info for the album given as $1 for the artist that is in effect
 artist_album_info () {
     album_raw=$1
-    album=$(echo $album_raw | tr ' ' '+')                  # album name, suitable for last.fm query
+    album=${album_raw// /+}                                  # album name, suitable for last.fm query
     req=$lastfm_base_req"&method=album.getInfo&artist="$artist"&album="$album
     resp=$(curl --silent $req)
     album_published=$(echo $resp | jq -r '.album.wiki.published')
@@ -124,7 +124,7 @@ artist_info_display () {
                             next="Tags"
                             break ;;
                         "Top Tracks")
-                            artist_toptracks_get "$artist_raw"
+                            artist_toptracks_get
                             next="Top Tracks"
                             break ;;
                         "Albums")
@@ -176,13 +176,11 @@ artist_info_display () {
                             break ;;
                         "Listen To All")
                             for track in "${toptracks[@]}"; do
-                                track=$(echo $track | tr ' ' '+')
-                                video_watch $artist $track
+                                video_watch $artist ${track// /+}
                                 wait
                             done ;;
                         *)
-                            song=$(echo $choice | tr ' ' '+')
-                            video_watch $artist $song
+                            video_watch $artist ${song// /+}
                             ;;
                     esac
                 done ;;
