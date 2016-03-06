@@ -77,7 +77,8 @@ artist_album_info () {
 }
 
 video_watch () {
-    youtube-dl 2>/dev/null -o - $youtube$(curl -s $youtube_search${1}+${2} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//') | vlc --play-and-exit &>/dev/null - &
+    link=$youtube$(curl -s $youtube_search${1}+${2} | grep -o 'watch?v=[^"]*"[^>]*title="[^"]*' | head -n 1 | awk '{print $1;}' | sed 's/*//')
+    youtube-dl 2>/dev/null -o - $link | vlc --play-and-exit --input-title-format "${1//+/ } - ${2//+/ }" &>/dev/null - &
 }
 
 header_display () {
@@ -180,7 +181,7 @@ artist_info_display () {
                                 wait
                             done ;;
                         *)
-                            video_watch $artist ${song// /+}
+                            video_watch $artist ${choice// /+}
                             ;;
                     esac
                 done ;;
