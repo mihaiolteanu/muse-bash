@@ -249,5 +249,14 @@ main () {
     done
 }
 
-artist_info_get "$1"
+# either all arguments are one artist name,
+# either no arguments are present, so ask the user for an artist
+if [[ $# -lt 1 ]]; then
+    echo -n "Artist: "
+    read artist
+else
+    artist=$*
+fi
+
+artist_info_get "$artist"
 main
