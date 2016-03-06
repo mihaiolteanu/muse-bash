@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Muse : Navigate Last.Fm from the command line. Explore similar artist, top songs, etc and stream the video from youtube">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Muse</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/mihaiolteanu/muse">View on GitHub</a>
+
+          <h1 id="project_title">Muse</h1>
+          <h2 id="project_tagline">Navigate Last.Fm from the command line. Explore similar artist, top songs, etc and stream the video from youtube</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/mihaiolteanu/muse/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/mihaiolteanu/muse/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h2>
+
+<pre><code>$ muse artist name
+</code></pre>
+
+<p>Here is an example for one of history greatest:
+<img src="https://cloud.githubusercontent.com/assets/8273519/13554562/a453d4c8-e3b3-11e5-8dc9-18da468bbb61.gif" alt="live demo"></p>
+
+<p>Use the config file to change the number of entries for top tracks and albums.</p>
+
+<h2>
+<a id="install" class="anchor" href="#install" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Install</h2>
+
+<p>You'll need <a href="https://stedolan.github.io/jq/">jq</a>, <a href="https://rg3.github.io/youtube-dl/">youtube-dl</a> and a <a href="www.last.fm/api">last.fm api key</a> (see the config file, <code>.muserc</code>)</p>
+
+<pre><code>$ sudo apt-get install youtube-dl jq
+$ git clone https://github.com/mihaiolteanu/muse
+$ sudo cp muse.sh /usr/local/bin/muse
+$ cp .muserc ~/.muserc
+</code></pre>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Muse maintained by <a href="https://github.com/mihaiolteanu">mihaiolteanu</a></p>
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
