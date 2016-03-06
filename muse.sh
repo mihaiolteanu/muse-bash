@@ -167,7 +167,7 @@ artist_info_display () {
             "Top Tracks")
                 echo "${bold}Top Tracks${normal} "
                 PS3="Listen to: "
-                select choice in "( Quit )" "( Go Back )" "${toptracks[@]}" "Listen To All"; do
+                select choice in "( Quit )" "( Go Back )" "( Watch All )" "${toptracks[@]}"; do
                     case $choice in
                         "( Quit )")
                             next="Quit"
@@ -175,7 +175,7 @@ artist_info_display () {
                         "( Go Back )")
                             next="Explore"
                             break ;;
-                        "Listen To All")
+                        "( Watch All )")
                             for track in "${toptracks[@]}"; do
                                 video_watch $artist ${track// /+}
                                 wait
@@ -208,7 +208,7 @@ artist_info_display () {
                 echo $album_summary
                 echo "${bold}Playlist${normal}"
                 PS3="Listen to: "
-                select choice in "( Quit )" "( Go Back )" "${album_tracks[@]}" "Listen To All"; do
+                select choice in "( Quit )" "( Go Back )" "( Watch All )" "${album_tracks[@]}"; do
                     case $choice in
                         "( Quit )")
                             next="Quit"
@@ -216,7 +216,7 @@ artist_info_display () {
                         "( Go Back )")
                             next="Albums"
                             break ;;
-                        "Listen To All")
+                        "( Watch All )")
                             for track in "${album_tracks[@]}"; do
                                 video_watch $artist ${track// /+}
                                 wait
