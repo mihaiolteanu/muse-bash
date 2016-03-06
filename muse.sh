@@ -16,8 +16,6 @@ source ~/.muserc
 
 
 lastfm_base_req="https://ws.audioscrobbler.com/2.0/?format=json&api_key=${LASTFM_API_KEY}"
-lastfm_artist_req=$lastfm_base_req"&method=artist.getInfo&artist="     # ${artist} to be added
-lastfm_toptracks_req=$lastfm_base_req"&method=artist.getTopTracks&limit=${LASTFM_TOP_TRACKS_NO}&artist=" # ${artist} to be added
 
 youtube="https://www.youtube.com/"
 youtube_search=$youtube"results?search_query="
@@ -29,6 +27,7 @@ underline=$(tput smul)
 tags_info () { echo "Feature not implemented yet."; }
 
 artist_toptracks_get () {
+    lastfm_toptracks_req=$lastfm_base_req"&method=artist.getTopTracks&limit=${LASTFM_TOP_TRACKS_NO}&artist="
     lastfm_resp=$(curl --silent $lastfm_toptracks_req${artist})
     # create an array, where each element is separated by the IFS; jq returns each
     # entry (toptrack in this case) on a new line. I can then walk the array with
@@ -45,11 +44,13 @@ artist_toptracks_get () {
 artist_info_get () {
     artist_raw=$1                                            # artist name, as given by the user
     artist=${artist_raw// /+}                                # artist name, suitable for last.fm query
+    lastfm_artist_req=$lastfm_base_req"&method=artist.getInfo&artist="
     lastfm_resp=$(curl --silent $lastfm_artist_req${artist}) # get json response from last.fm
     summary=$(echo $lastfm_resp | jq -r '.artist.bio.summary')
     # build arrays for both similar artists and for tags entries
     oldIFS=$IFS; IFS=$'\n'
     similar=($(echo $lastfm_resp | jq -r '.artist.similar.artist | .[] | .name'))
+    similar_extended=0   # new artist, so we have only basic similar artists info
     tags=($(echo $lastfm_resp | jq -r '.artist.tags.tag | .[] | .name'))
     IFS=$oldIFS
 }
@@ -64,7 +65,7 @@ artist_albums_get () {
 }
 
 # get additional info for the album given as $1 for the artist that is in effect
-artist_album_info () {
+artist_albuminfo_get () {
     album_raw=$1
     album=${album_raw// /+}                                  # album name, suitable for last.fm query
     req=$lastfm_base_req"&method=album.getInfo&artist="$artist"&album="$album
@@ -73,6 +74,15 @@ artist_album_info () {
     album_summary=$(echo $resp | jq -r '.album.wiki.summary')
     oldIFS=$IFS; IFS=$'\n'
     album_tracks=($(echo $resp | jq -r '.album.tracks.track | .[] | .name'))
+    IFS=$oldIFS
+}
+
+artist_similar_get () {
+    req=$lastfm_base_req"&method=artist.getSimilar&artist="$artist"&limit="10
+    resp=$(curl --silent $req)
+    oldIFS=$IFS; IFS=$'\n'
+    similar=($(echo $resp | jq -r '.similarartists.artist | .[] | .name'))
+    similar_extended=1 # additional artists have been received
     IFS=$oldIFS
 }
 
@@ -102,8 +112,8 @@ header_display () {
     echo
 }
 
-artist_info_display () {
-    next=$1
+main () {
+    next="Explore"
     # decide what to display next. I want to clear the old selection menu
     # and display a new one, based on the old selection, keeping the artist info
     # stuff that is already displayed in the console intact
@@ -135,6 +145,8 @@ artist_info_display () {
                     esac
                 done ;;
             "Similar artists")
+                # get additional similar artists, if needed
+                [[ $similar_extended -eq 1 ]] || artist_similar_get
                 PS3="Pick an artist: "
                 select choice in "( Quit )" "( Go Back )" "${similar[@]}"; do
                     case $choice in
@@ -197,7 +209,7 @@ artist_info_display () {
                             next="Explore"
                             break ;;
                         *)
-                            artist_album_info $choice
+                            artist_albuminfo_get $choice
                             next="Album Info"
                             break ;;
                     esac
@@ -232,4 +244,4 @@ artist_info_display () {
 }
 
 artist_info_get "$1"
-artist_info_display "Explore"
+main
