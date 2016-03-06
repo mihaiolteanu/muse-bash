@@ -104,13 +104,14 @@ artist_info_display () {
     # and display a new one, based on the old selection, keeping the artist info
     # stuff that is already displayed in the console intact
     while [[ $next != "Quit" ]]; do
+        COLUMNS=1
         header_display
         case $next in
             "Explore")
                 PS3="Explore: "
-                select choice in "Similar artists" "Tags" "Top Tracks" "Albums" "Quit"; do
+                select choice in "( Quit )" "Similar artists" "Tags" "Top Tracks" "Albums"; do
                     case $choice in
-                        "Quit")
+                        "( Quit )")
                             next="Quit"
                             break ;;
                         "Similar artists")
@@ -131,12 +132,12 @@ artist_info_display () {
                 done ;;
             "Similar artists")
                 PS3="Pick an artist: "
-                select choice in "${similar[@]}" "Go Back" "Quit"; do
+                select choice in "( Quit )" "( Go Back )" "${similar[@]}"; do
                     case $choice in
-                        "Quit")
+                        "( Quit )")
                             next="Quit"
                             break ;;
-                        "Go Back")
+                        "( Go Back )")
                             next="Explore"
                             break ;;
                         *)
@@ -147,12 +148,12 @@ artist_info_display () {
                 done ;;
             "Tags")
                 PS3="Pick a tag: "
-                select choice in "${tags[@]}" "Go Back" "Quit"; do
+                select choice in "( Quit )" "( Go Back )" "${tags[@]}"; do
                     case $choice in
-                        "Quit")
+                        "( Quit )")
                             next="Quit"
                             break ;;
-                        "Go Back")
+                        "( Go Back )")
                             next="Explore"
                             break ;;
                         *)
@@ -162,12 +163,12 @@ artist_info_display () {
             "Top Tracks")
                 echo "${bold}Top Tracks${normal} "
                 PS3="Listen to: "
-                select choice in "${toptracks[@]}" "Listen To All" "Go Back" "Quit"; do
+                select choice in "( Quit )" "( Go Back )" "${toptracks[@]}" "Listen To All"; do
                     case $choice in
-                        "Quit")
+                        "( Quit )")
                             next="Quit"
                             break ;;
-                        "Go Back")
+                        "( Go Back )")
                             next="Explore"
                             break ;;
                         "Listen To All")
@@ -189,14 +190,18 @@ artist_info_display () {
             "Albums")
                 echo "${bold}Albums${normal}"
                 PS3="Explore album: "
-                select choice in "${albums[@]}" "Go Back" "Quit"; do
+                select choice in "( Quit )" "( Go Back )" "${albums[@]}"; do
                     case $choice in
-                        "Quit") exit 0;;
-                        "Go Back")
-                            artist_info_display "Explore" ;;
+                        "( Quit )")
+                            next="Quit"
+                            break ;;
+                        "( Go Back )")
+                            next="Explore"
+                            break ;;
                         *)
                             artist_album_info $choice
-                            artist_info_display "Album Info"
+                            next="Album Info"
+                            break ;;
                     esac
                 done ;;
             "Album Info")
@@ -205,12 +210,12 @@ artist_info_display () {
                 echo $album_summary
                 echo "${bold}Playlist${normal}"
                 PS3="Listen to: "
-                select choice in "${album_tracks[@]}" "Go Back" "Quit"; do
+                select choice in "( Quit )" "( Go Back )" "${album_tracks[@]}"; do
                     case $choice in
-                        "Quit")
+                        "( Quit )")
                             next="Quit"
                             break ;;
-                        "Go Back")
+                        "( Go Back )")
                             next="Albums"
                             break ;;
                         *)
