@@ -1,0 +1,9 @@
+# api key from last.fm (http://www.last.fm/api)
+LASTFM_API_KEY=
+
+# number of top tracks to be displayed
+LASTFM_TOP_TRACKS_NO=15
+
+# number of albums to be displayed
+# a hight number of albums might include erroneus data
+LASTFM_ALBUMS_NO=7
